@@ -71,7 +71,7 @@ async function streamToBlob(stream, type) {
        * Recursively pumps data chunks out of the `ReadableStream`.
        * @type { () => Promise<void> }
        */
-      async function pump() {
+      function pump() {
         return reader.read().then(({ done, value }) => {
           if (done) {
             controller.close();
