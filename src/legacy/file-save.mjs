@@ -66,19 +66,19 @@ async function streamToBlob(stream, type) {
   const reader = stream.getReader();
   const pumpedStream = new ReadableStream({
     start(controller) {
-      return pump();
+      pump();
       /**
        * Recursively pumps data chunks out of the `ReadableStream`.
        * @type { () => Promise<void> }
        */
       function pump() {
-        return reader.read().then(({ done, value }) => {
+        reader.read().then(({ done, value }) => {
           if (done) {
             controller.close();
             return;
           }
           controller.enqueue(value);
-          return pump();
+          pump();
         });
       }
     },
