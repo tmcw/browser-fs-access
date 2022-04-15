@@ -26,11 +26,8 @@ export default async (blobOrResponse, options = {}) => {
   const a = document.createElement('a');
   let data = blobOrResponse;
   // Handle the case where input is a `ReadableStream`.
-  if ('body' in blobOrResponse) {
-    data = await streamToBlob(
-      blobOrResponse.body,
-      blobOrResponse.headers.get('content-type')
-    );
+  if ('blob' in blobOrResponse) {
+    data = await blobOrResponse.blob();
   }
   a.download = options.fileName || 'Untitled';
   a.href = URL.createObjectURL(data);
@@ -55,37 +52,3 @@ export default async (blobOrResponse, options = {}) => {
   a.click();
   return null;
 };
-
-/**
- * Converts a passed `ReadableStream` to a `Blob`.
- * @param {ReadableStream} stream
- * @param {string} type
- * @returns {Promise<Blob>}
- */
-async function streamToBlob(stream, type) {
-  const reader = stream.getReader();
-  const pumpedStream = new ReadableStream({
-    start(controller) {
-      pump();
-      /**
-       * Recursively pumps data chunks out of the `ReadableStream`.
-       * @type { () => Promise<void> }
-       */
-      function pump() {
-        reader.read().then(({ done, value }) => {
-          if (done) {
-            controller.close();
-            return;
-          }
-          controller.enqueue(value);
-          pump();
-        });
-      }
-    },
-  });
-
-  const res = new Response(pumpedStream);
-  const blob = await res.blob();
-  reader.releaseLock();
-  return new Blob([blob], { type });
-}
