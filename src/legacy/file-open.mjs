@@ -23,18 +23,13 @@ export default async (options = [{}]) => {
   if (!Array.isArray(options)) {
     options = [options];
   }
-  return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    const accept = [
-      ...options.map((option) => option.mimeTypes || []),
-      ...options.map((option) => option.extensions || []),
-    ].join();
-    input.multiple = options[0].multiple || false;
-    // Empty string allows everything.
-    input.accept = accept || '';
-    const _reject = () => cleanupListenersAndMaybeReject(reject);
-    const _resolve = (value) => {
+
+  let _resolve;
+  let _reject;
+
+  const promise = new Promise((resolve, reject) => {
+    _reject = () => cleanupListenersAndMaybeReject(reject);
+    _resolve = (value) => {
       if (typeof cleanupListenersAndMaybeReject === 'function') {
         cleanupListenersAndMaybeReject();
       }
@@ -45,10 +40,21 @@ export default async (options = [{}]) => {
     const cleanupListenersAndMaybeReject =
       options[0].legacySetup &&
       options[0].legacySetup(_resolve, _reject, input);
-    input.addEventListener('change', () => {
-      _resolve(input.multiple ? Array.from(input.files) : input.files[0]);
-    });
-
-    input.click();
   });
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  const accept = [
+    ...options.map((option) => option.mimeTypes || []),
+    ...options.map((option) => option.extensions || []),
+  ].join();
+  input.multiple = options[0].multiple || false;
+  // Empty string allows everything.
+  input.accept = accept || '';
+  input.addEventListener('change', () => {
+    _resolve(input.multiple ? Array.from(input.files) : input.files[0]);
+  });
+  input.click();
+
+  return promise;
 };
